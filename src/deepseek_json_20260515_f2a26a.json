@@ -1,0 +1,10 @@
+{
+  "name": "xiaoqi-ledger",
+  "main": "index.html",
+  "window": {
+    "title": "小七记账本",
+    "width": 1400,
+    "height": 900,
+    "icon": "icon.png"
+  }
+}

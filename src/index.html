@@ -2,794 +2,475 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-    <title>小七记账本</title>
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- 思源宋体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>QuickNotes · 灵动日程本 | 文件夹分类 + 双语</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', 'Inter', '微软雅黑', system-ui, sans-serif;
         }
 
         body {
-            background: url('1.jpg') no-repeat center center fixed;
-            background-size: cover;
-            font-family: 'Noto Serif SC', 'Times New Roman', serif;
-            padding: 12px;
-            min-height: 100vh;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: var(--bg-primary);
+            transition: background 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        /* 莫兰迪主题变量 (动态更新) */
+        :root {
+            --bg-primary: #E6EAEF;
+            --bg-secondary: #F4F6F9;
+            --sidebar-bg: #E6EAEF;
+            --card-bg: #FFFFFF;
+            --button-bg: #C4D0DF;
+            --button-hover: #9AB3D5;
+            --text-primary: #2C3E50;
+            --text-secondary: #7F8C8D;
+            --accent: #9AB3D5;
+            --completed: #A0AAB5;
+            --border-light: #D8E0E8;
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.08);
+            --priority-high: #F2A07E;
+            --priority-medium: #EAD58B;
+            --priority-low: #AFCBAA;
+        }
+
+        body.theme-morandi_green {
+            --bg-primary: #E2EBE4;
+            --bg-secondary: #F2F6F2;
+            --sidebar-bg: #E2EBE4;
+            --button-bg: #BECFBA;
+            --button-hover: #8FB48A;
+            --accent: #8FB48A;
+            --completed: #9BB89B;
+            --text-primary: #2C4A3A;
+            --priority-high: #E7B28E;
+            --priority-medium: #E2D48B;
+            --priority-low: #B8CFA5;
+        }
+        body.theme-morandi_pink {
+            --bg-primary: #F5EAEF;
+            --bg-secondary: #FDF5F8;
+            --sidebar-bg: #F5EAEF;
+            --button-bg: #E2C7D4;
+            --button-hover: #D4A5B9;
+            --accent: #D4A5B9;
+            --completed: #C6AFC0;
+            --text-primary: #6B4E5E;
+            --priority-high: #F0B6A4;
+            --priority-medium: #F0E2A4;
+            --priority-low: #C7DCB5;
+        }
+        body.theme-morandi_beige {
+            --bg-primary: #F2EFE9;
+            --bg-secondary: #FCFAF5;
+            --sidebar-bg: #F2EFE9;
+            --button-bg: #DCD5C6;
+            --button-hover: #C2B9A8;
+            --accent: #C2B9A8;
+            --completed: #B7B09C;
+            --text-primary: #5E5B52;
+            --priority-high: #E9C6B0;
+            --priority-medium: #E8DCAA;
+            --priority-low: #C2D6B5;
+        }
+
+        /* 主布局 */
+        .app-container {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
+            height: 100vh;
             width: 100%;
-            height: 100%;
-            background: rgba(245, 240, 225, 0.25);
-            pointer-events: none;
-            z-index: 0;
+            background: var(--bg-primary);
         }
 
-        /* 横屏双栏 */
-        .ledger-horizontal {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-            max-width: 1400px;
-            width: 100%;
-            height: calc(100vh - 24px);
-            max-height: 90vh;
-            margin: 0 auto;
-            background: transparent;
-            position: relative;
-            z-index: 1;
-        }
-
-        .summary-cards,
-        .transactions-wrapper,
-        .right-panel {
-            background: rgba(250, 245, 235, 0.88);
-            backdrop-filter: blur(3px);
-            border-radius: 32px 12px 32px 12px;
-            box-shadow: 6px 6px 16px rgba(60, 40, 20, 0.15);
-            border: 1px solid #d9c5a7;
-            transition: all 0.2s ease;
-        }
-
-        .left-panel {
+        .main-content {
+            flex: 3;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            height: 100%;
+            background: var(--bg-secondary);
+            margin: 16px 0 16px 16px;
+            border-radius: 36px;
+            box-shadow: var(--shadow-md);
             overflow: hidden;
         }
 
-        /* 余额卡片 */
-        .summary-cards {
-            padding: 16px 20px;
-            background: rgba(245, 240, 225, 0.9);
-        }
-        .balance-large {
+        /* 工具栏 */
+        .toolbar {
+            padding: 20px 28px;
+            background: var(--bg-secondary);
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 14px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #b5986e;
-        }
-        .balance-label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #6f4e2e;
-            letter-spacing: 1px;
-            padding-left: 20px;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238b5a2b" width="14px" height="14px"><path d="M12 2L15 8.5L22 9.5L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9.5L9 8.5L12 2Z"/></svg>') no-repeat left center;
-            background-size: 14px;
-        }
-        .balance-amount {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #8b5a2b;
-        }
-        .stats-row-h {
-            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 16px;
+            border-bottom: 1.5px solid var(--border-light);
         }
-        .stat-item {
-            flex: 1;
-            background: #fef6e8;
-            border-radius: 24px 6px 24px 6px;
-            padding: 8px 8px;
-            text-align: center;
-            border: 1px solid #e2d0b6;
-        }
-        .stat-title {
-            font-size: 0.7rem;
-            color: #9b7a54;
-            margin-bottom: 4px;
-        }
-        .stat-number {
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-        .income-num { color: #2f6b47; }
-        .expense-num { color: #bc6f45; }
 
-        /* 交易列表 */
-        .transactions-wrapper {
-            flex: 1;
+        .filter-group {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-height: 0;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 18px 8px 18px;
-            border-bottom: 1px solid #e2cfb0;
-            background: rgba(240, 230, 210, 0.5);
-        }
-        .list-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #5a3e28;
-        }
-        .list-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .icon-btn {
-            background: #eee2d0;
-            border: 1px solid #cfbc9a;
-            padding: 4px 10px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: #6f4e2e;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .transactions-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 4px 0;
-        }
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 16px;
-            border-bottom: 1px solid #eedfc8;
-        }
-        .trans-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .trans-desc {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #4a3520;
-        }
-        .trans-date {
-            font-size: 0.6rem;
-            color: #9c8262;
-        }
-        .trans-amount {
-            font-weight: 700;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .income-amount { color: #2f6b47; }
-        .expense-amount { color: #bc6f45; }
-        .delete-btn {
-            background: transparent;
+
+        .filter-btn, .folder-btn {
+            padding: 8px 20px;
             border: none;
-            color: #bea684;
+            background: var(--button-bg);
+            color: var(--text-primary);
+            font-weight: 600;
+            border-radius: 60px;
             cursor: pointer;
-            padding: 4px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
         }
-        .delete-btn:hover { color: #bc6f45; }
 
-        .empty-state {
-            text-align: center;
-            padding: 30px 12px;
-            color: #b39876;
-            font-size: 0.8rem;
+        .filter-btn.active, .folder-btn.active {
+            background: var(--accent);
+            color: white;
         }
-        .empty-state i { font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
 
-        /* ========= 右侧卡片布局 ========= */
-        .right-panel {
-            height: 100%;
+        .filter-btn:hover, .folder-btn:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+        }
+
+        .folder-manager {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .add-folder-input {
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid var(--border-light);
+            background: var(--card-bg);
+            font-size: 0.8rem;
+            width: 110px;
+        }
+
+        .datetime-area {
+            text-align: right;
+        }
+        .date-large {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .calendar-trigger {
+            background: rgba(154, 179, 213, 0.2);
+            border: none;
+            color: var(--accent);
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 8px;
+            padding: 6px 14px;
+            border-radius: 30px;
+        }
+
+        /* 任务列表 */
+        .task-section {
+            flex: 1;
+            padding: 16px 20px 20px 24px;
+            overflow-y: auto;
+        }
+        .task-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding: 16px 18px;
-            overflow-y: auto;
         }
-
-        .func-card {
-            background: rgba(255, 250, 240, 0.7);
+        .task-card {
+            background: var(--card-bg);
             border-radius: 24px;
-            padding: 10px 14px;
-            border: 1px solid #e2cfb0;
-        }
-        .card-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #6f4e2e;
-            margin-bottom: 8px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
-            gap: 5px;
-            border-left: 3px solid #bc9a6a;
-            padding-left: 8px;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            transition: 0.2s;
+            cursor: pointer;
         }
-        .input-item {
-            background: #fef7ed;
-            border-radius: 32px 10px 32px 10px;
-            padding: 6px 12px;
-            border: 1px solid #ddceb4;
+        .task-card:hover { transform: translateX(5px); box-shadow: var(--shadow-md);}
+        .priority-badge { width: 28px; font-size: 1rem; text-align: center; cursor: pointer; }
+        .priority-high { color: var(--priority-high); }
+        .priority-medium { color: var(--priority-medium); }
+        .priority-low { color: var(--priority-low); }
+        .task-status { font-size: 1.5rem; cursor: pointer; width: 36px; text-align: center; }
+        .task-content { flex: 2; font-weight: 500; color: var(--text-primary); word-break: break-word; white-space: normal; }
+        .task-content.completed { text-decoration: line-through; color: var(--completed); }
+        .task-date { font-size: 0.75rem; background: var(--bg-secondary); padding: 4px 12px; border-radius: 40px; color: var(--text-secondary); min-width: 100px; text-align: center; }
+        .task-actions { display: flex; gap: 12px; }
+        .icon-btn { background: none; border: none; font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 30px; color: var(--text-secondary); font-weight: 500; }
+        .icon-btn:hover { background: var(--button-bg); }
+        .empty-msg { text-align: center; padding: 48px; color: var(--text-secondary); background: var(--card-bg); border-radius: 40px; margin-top: 20px;}
+
+        /* 右侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            padding: 28px 16px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 18px;
         }
-        .input-item i {
-            color: #a77b4a;
-            width: 28px;
-            font-size: 0.9rem;
-        }
-        .input-item input, .input-item select {
-            width: 100%;
-            padding: 8px 4px;
+        .logo { font-size: 1.9rem; font-weight: 800; text-align: center; color: var(--text-primary); }
+        .action-btn {
+            background: var(--button-bg);
             border: none;
-            background: transparent;
-            font-size: 0.85rem;
-            font-family: inherit;
-            outline: none;
-            color: #4a3520;
-        }
-        .double-row {
-            display: flex;
-            gap: 10px;
-        }
-        .double-row .input-item {
-            flex: 1;
-        }
-        .add-btn {
-            background: #8b6946;
-            color: #fef0e0;
-            border: none;
-            border-radius: 40px;
             padding: 10px;
+            border-radius: 48px;
             font-weight: 600;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
             cursor: pointer;
-            width: 100%;
+            transition: 0.2s;
         }
-        .add-btn:hover { background: #6f4e2e; }
-
-        /* 动态子分类 */
-        .sub-category-card {
-            display: none;
-            margin-top: 8px;
-        }
-        .sub-category-card.show {
-            display: block;
-        }
-
-        /* 图表卡片 */
-        .chart-card {
-            background: rgba(255, 250, 240, 0.7);
+        .action-btn:hover { background: var(--button-hover); transform: translateY(-2px); }
+        .separator { height: 1px; background: var(--border-light); margin: 8px 0; }
+        .recent-tasks-box {
+            background: var(--card-bg);
             border-radius: 24px;
-            padding: 10px 14px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
         }
-        .chart-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #6f4e2e;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            border-left: 3px solid #bc9a6a;
-            padding-left: 8px;
-        }
-        .chart-container {
-            background: rgba(255, 250, 240, 0.7);
-            border-radius: 24px;
-            padding: 6px;
-            border: 1px solid #e2cfb0;
-            height: 140px;
-        }
-        canvas#expenseChart {
-            max-height: 120px;
-            width: 100%;
-        }
-        .chart-note {
-            font-size: 0.6rem;
-            text-align: center;
-            color: #9b7a54;
-            margin-top: 6px;
-        }
-
-        /* 年月查账卡片 */
-        .filter-card {
-            background: rgba(255, 250, 240, 0.7);
-            border-radius: 24px;
-            padding: 10px 14px;
-        }
-        .filter-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #6f4e2e;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            border-left: 3px solid #bc9a6a;
-            padding-left: 8px;
-        }
-        .filter-controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .filter-select {
-            background: #fef7ed;
-            border: 1px solid #ddceb4;
-            border-radius: 30px;
-            padding: 6px 8px;
-            font-size: 0.8rem;
-            font-family: inherit;
-            color: #4a3520;
-            flex: 1;
-        }
-        .filter-btn {
-            background: #bc9a6a;
-            border: none;
-            border-radius: 30px;
-            padding: 6px 14px;
-            color: white;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .filter-result {
-            background: #fef6e8;
-            border-radius: 24px;
-            padding: 8px 12px;
-            text-align: center;
-            font-size: 0.75rem;
-        }
-        .filter-result .income { color: #2f6b47; font-weight: 600; }
-        .filter-result .expense { color: #bc6f45; font-weight: 600; margin-left: 8px; }
-
-        /* 关于卡片 */
-        .about-card {
-            background: rgba(255, 250, 240, 0.7);
-            border-radius: 24px;
-            padding: 8px 14px;
-            text-align: center;
-        }
-        .about-btn {
-            background: #ede0ce;
-            border: 1px solid #c8af8a;
-            border-radius: 40px;
-            padding: 8px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #6f4e2e;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            width: 100%;
-        }
-        .info-tip {
-            font-size: 0.6rem;
-            color: #ad9276;
-            margin-top: 6px;
-        }
+        .recent-title { font-weight: 700; margin-bottom: 12px; font-size: 0.85rem; color: var(--accent); }
+        .recent-item { font-size: 0.8rem; padding: 6px 0; border-bottom: 1px dashed var(--border-light); display: flex; justify-content: space-between; }
+        .version { font-size: 0.7rem; text-align: center; color: var(--text-secondary); margin-top: auto; }
 
         /* 模态框 */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-            align-items: center;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
             justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
-        .modal-content {
-            background: #fff8ed;
-            border-radius: 32px 12px 32px 12px;
-            max-width: 320px;
-            width: 90%;
-            padding: 20px 24px;
-            text-align: center;
+        .modal-card {
+            background: var(--card-bg);
+            border-radius: 40px;
+            width: 420px;
+            max-width: 90%;
+            padding: 28px;
+            animation: popIn 0.2s;
         }
-        .modal-content i { font-size: 2.5rem; color: #8b6946; margin-bottom: 8px; }
-        .modal-content h3 { font-size: 1.3rem; color: #5a3e28; margin-bottom: 4px; }
-        .modal-content p { font-size: 0.8rem; margin: 6px 0; }
-        .modal-content .email { font-size: 0.8rem; background: #f3e9dd; display: inline-block; padding: 4px 12px; border-radius: 30px; margin: 8px 0; }
-        .close-modal { background: #bc9a6a; color: white; border: none; border-radius: 30px; padding: 6px 20px; cursor: pointer; margin-top: 8px; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        .modal-card h3 { margin-bottom: 20px; }
+        .modal-card input, .modal-card textarea, .modal-card select {
+            width: 100%;
+            padding: 10px 14px;
+            margin: 8px 0 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 32px;
+            background: var(--bg-secondary);
+            font-size: 0.9rem;
+        }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+        .modal-buttons button { padding: 8px 20px; border-radius: 40px; border: none; cursor: pointer; }
 
-        /* 美化滚动条 */
-        .transactions-list::-webkit-scrollbar { width: 3px; }
-        .transactions-list::-webkit-scrollbar-track { background: #eedfc8; border-radius: 10px; }
-        .transactions-list::-webkit-scrollbar-thumb { background: #c2a176; border-radius: 10px; }
-        .right-panel::-webkit-scrollbar { width: 3px; }
-        .right-panel::-webkit-scrollbar-track { background: #eedfc8; border-radius: 10px; }
-        .right-panel::-webkit-scrollbar-thumb { background: #c2a176; border-radius: 10px; }
-
-        @media (max-width: 1000px) {
-            .ledger-horizontal {
-                grid-template-columns: 1fr 380px;
-                gap: 16px;
-            }
-        }
-        @media (max-width: 900px) {
-            .ledger-horizontal {
-                grid-template-columns: 1fr;
-                gap: 16px;
-                height: auto;
-                max-height: none;
-            }
-            .right-panel { overflow-y: visible; }
-        }
+        .calendar-modal .modal-card { width: 460px; }
+        .calendar-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; margin-bottom: 12px; font-weight: 600; }
+        .calendar-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; }
+        .cal-day { aspect-ratio:1; display: flex; align-items: center; justify-content: center; border-radius: 40px; cursor: pointer; background: var(--bg-secondary); }
+        .cal-day.today { background: var(--accent); color: white; }
+        .cal-day.has-tasks { font-weight: bold; border: 2px solid var(--accent); }
+        .cal-day:hover { background: var(--button-hover); transform: scale(0.94); }
+        .color-palette { display: flex; gap: 16px; justify-content: center; margin: 15px 0; }
+        .color-circle { width: 44px; height: 44px; border-radius: 44px; cursor: pointer; border: 2px solid transparent; }
+        .lang-select { display: flex; gap: 12px; justify-content: center; margin-top: 10px; }
+        .lang-btn { background: var(--button-bg); padding: 8px 20px; border-radius: 30px; cursor: pointer; border: none; font-weight: 500; }
+        .lang-btn.active { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
-<div class="ledger-horizontal">
-    <!-- 左侧区域 -->
-    <div class="left-panel">
-        <div class="summary-cards">
-            <div class="balance-large">
-                <span class="balance-label">总资产（余银）</span>
-                <span class="balance-amount" id="totalBalance">¥0.00</span>
+<div class="app-container">
+    <div class="main-content">
+        <div class="toolbar">
+            <div class="filter-group">
+                <button class="filter-btn" data-filter="day" data-i18n="dayTab">本日任务</button>
+                <button class="filter-btn" data-filter="week" data-i18n="weekTab">本周任务</button>
+                <button class="filter-btn" data-filter="all" data-i18n="allTab">全部任务</button>
+                <div class="folder-manager">
+                    <select id="folderSelect" class="folder-btn" style="background:var(--button-bg);"></select>
+                    <input type="text" id="newFolderName" placeholder="新文件夹" class="add-folder-input" data-i18n-placeholder="folderPlaceholder">
+                    <button id="addFolderBtn" class="folder-btn" style="padding:8px 12px;" data-i18n="addFolder">+ 添加</button>
+                </div>
             </div>
-            <div class="stats-row-h">
-                <div class="stat-item">
-                    <div class="stat-title">俸禄·入</div>
-                    <div class="stat-number income-num" id="totalIncome">¥0.00</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-title">用度·出</div>
-                    <div class="stat-number expense-num" id="totalExpense">¥0.00</div>
-                </div>
+            <div class="datetime-area">
+                <div class="date-large" id="currentDateDisplay"></div>
+                <button class="calendar-trigger" id="openCalendarBtn" data-i18n="viewCalendar">查看日历 (右键日期添加)</button>
             </div>
         </div>
-
-        <div class="transactions-wrapper">
-            <div class="list-header">
-                <h3><i class="fas fa-scroll"></i> 流水簿</h3>
-                <div class="list-actions">
-                    <button class="icon-btn" id="resetSampleBtn"><i class="fas fa-brush"></i> 示例</button>
-                    <button class="icon-btn" id="clearAllBtn"><i class="fas fa-eraser"></i> 清空</button>
-                </div>
-            </div>
-            <div class="transactions-list" id="transactionsList">
-                <div class="empty-state"><i class="fas fa-feather-alt"></i><p>暂无账目</p></div>
-            </div>
-        </div>
+        <div class="task-section"><div class="task-list" id="taskList"></div></div>
     </div>
 
-    <!-- 右侧区域 -->
-    <div class="right-panel">
-        <!-- 金额 & 大类 -->
-        <div class="func-card">
-            <div class="card-title"><i class="fas fa-balance-scale"></i> 金额 & 大类</div>
-            <div class="double-row">
-                <div class="input-item"><i class="fas fa-coins"></i><input type="number" id="amountInput" placeholder="银两" step="0.01" min="0.01"></div>
-                <div class="input-item"><i class="fas fa-exchange-alt"></i><select id="mainTypeSelect"><option value="expense">🍃 支出</option><option value="income">✨ 收入</option></select></div>
-            </div>
+    <div class="sidebar">
+        <div class="logo">📌 QuickNotes</div>
+        <button class="action-btn" id="newTaskBtn" data-i18n="newTask">+ 新建便签</button>
+        <button class="action-btn" id="completeSelectedBtn" data-i18n="completeTask">✓ 完成任务</button>
+        <button class="action-btn" id="deleteSelectedBtn" data-i18n="deleteTask">✗ 删除便签</button>
+        <div class="separator"></div>
+        <button class="action-btn" id="settingsBtn" data-i18n="settings">⚙️ 设置</button>
+        <button class="action-btn" id="aboutBtn" data-i18n="about">ℹ️ About</button>
+        <div class="recent-tasks-box" id="recentBox">
+            <div class="recent-title" data-i18n="recentTitle">📋 最近两项任务</div>
+            <div id="recentList">-</div>
         </div>
-
-        <!-- 详细分类（支出/收入动态切换） -->
-        <div class="func-card" id="categoryCard">
-            <div class="card-title"><i class="fas fa-list-ul"></i> 详细分类</div>
-            <div id="expenseSubGroup" class="sub-category-card show">
-                <div class="input-item"><i class="fas fa-tags"></i><select id="expenseSubSelect"><option value="住房">🏠 住房</option><option value="餐饮">🍜 餐饮</option><option value="购物">🛍️ 购物</option><option value="休闲娱乐">🎬 休闲娱乐</option><option value="其他支出">📦 其他支出</option></select></div>
-            </div>
-            <div id="incomeSubGroup" class="sub-category-card">
-                <div class="input-item"><i class="fas fa-tags"></i><select id="incomeSubSelect"><option value="工资">💰 工资</option><option value="经营">🏪 经营</option><option value="财产">📈 财产</option><option value="转移及偶然所得">🎁 转移及偶然所得</option></select></div>
-            </div>
-        </div>
-
-        <!-- 事由 -->
-        <div class="func-card">
-            <div class="card-title"><i class="fas fa-pen-fancy"></i> 事由</div>
-            <div class="input-item"><i class="fas fa-tag"></i><input type="text" id="descInput" placeholder="如：茶资 / 润笔"></div>
-        </div>
-
-        <!-- 日期 -->
-        <div class="func-card">
-            <div class="card-title"><i class="fas fa-calendar-alt"></i> 日期</div>
-            <div class="input-item"><i class="fas fa-calendar-day"></i><input type="date" id="dateInput"></div>
-        </div>
-
-        <!-- 添加按钮 -->
-        <div class="func-card"><button class="add-btn" id="addBtn"><i class="fas fa-save"></i> 入.账</button></div>
-
-        <!-- 支出分类饼图 -->
-        <div class="chart-card">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> 支出分类构成</div>
-            <div class="chart-container"><canvas id="expenseChart" width="400" height="140"></canvas></div>
-            <div class="chart-note">各支出类别占比</div>
-        </div>
-
-        <!-- 年月查账 -->
-        <div class="filter-card">
-            <div class="filter-title"><i class="fas fa-filter"></i> 依年月查账</div>
-            <div class="filter-controls">
-                <select id="yearSelect" class="filter-select"></select>
-                <select id="monthSelect" class="filter-select"></select>
-                <button id="queryBtn" class="filter-btn">查询</button>
-            </div>
-            <div class="filter-result" id="filterResult"><p>选择年月，点击查询</p><div><span class="income">收入: --</span> <span class="expense">支出: --</span></div></div>
-        </div>
-
-        <!-- 关于 -->
-        <div class="about-card">
-            <button class="about-btn" id="aboutBtn"><i class="fas fa-info-circle"></i> 关于 · 小七记</button>
-            <div class="info-tip"><i class="fas fa-database"></i> 本地存档</div>
-        </div>
+        <div class="version">QuickNotes v1.4 · 灵动分类</div>
     </div>
 </div>
 
-<div id="aboutModal" class="modal"><div class="modal-content"><i class="fas fa-leaf"></i><h3>小七记账本</h3><p>版本 · Version1.1</p><p>竹影横斜，流水知音</p><div class="email">📧 202520201145@bfsu.edu.cn</div><button class="close-modal" id="closeModalBtn">归 去</button></div></div>
+<!-- 任务模态框 -->
+<div id="taskModal" class="modal"><div class="modal-card"><h3 id="modalTitle">任务</h3>
+    <label data-i18n="taskContent">内容</label><textarea id="taskText" rows="2" style="resize:none;"></textarea>
+    <label data-i18n="taskDate">日期</label><input type="date" id="taskDate">
+    <label data-i18n="priority">优先级</label>
+    <select id="taskPriority"><option value="high">高优先级</option><option value="medium" selected>中优先级</option><option value="low">低优先级</option></select>
+    <label data-i18n="folder">文件夹</label><select id="taskFolder"></select>
+    <div class="modal-buttons"><button id="modalCancelBtn" data-i18n="cancel">取消</button><button id="modalConfirmBtn" style="background:var(--accent);color:white" data-i18n="save">保存</button></div>
+</div></div>
+
+<!-- 日历弹窗 -->
+<div id="calendarModal" class="modal calendar-modal"><div class="modal-card"><div class="calendar-header"><button id="prevMonthBtn">◀</button><h3 id="monthYearLabel"></h3><button id="nextMonthBtn">▶</button></div>
+<div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+<div id="calendarDaysContainer" class="calendar-days"></div><div class="modal-buttons"><button id="closeCalendarBtn" data-i18n="close">关闭</button></div>
+<p style="font-size:0.7rem; text-align:center; margin-top:14px;" data-i18n="calendarHint">✨ 右键点击任意日期 → 快速添加任务</p></div></div>
+
+<!-- 设置弹窗 (主题+语言) -->
+<div id="settingsModal" class="modal"><div class="modal-card"><h3 data-i18n="settingsTitle">设置</h3>
+    <div class="color-palette"><div class="color-circle" data-theme="morandi_blue" style="background:#9AB3D5;"></div><div class="color-circle" data-theme="morandi_green" style="background:#8FB48A;"></div><div class="color-circle" data-theme="morandi_pink" style="background:#D4A5B9;"></div><div class="color-circle" data-theme="morandi_beige" style="background:#C2B9A8;"></div></div>
+    <div class="lang-select"><button class="lang-btn" data-lang="zh">中文</button><button class="lang-btn" data-lang="en">English</button></div>
+    <div class="modal-buttons"><button id="closeSettingsBtn" data-i18n="close">关闭</button></div>
+</div></div>
 
 <script>
-    let transactions = [];
-    let expenseChart = null;
+    // ---------- 国际化资源 ----------
+    const locales = {
+        zh: { dayTab:"本日任务", weekTab:"本周任务", allTab:"全部任务", addFolder:"+添加", folderPlaceholder:"新文件夹", viewCalendar:"查看日历 (右键日期添加)", newTask:"+ 新建便签", completeTask:"✓ 完成任务", deleteTask:"✗ 删除便签", settings:"⚙️ 设置", about:"ℹ️ About", recentTitle:"📋 最近两项任务", taskContent:"内容", taskDate:"日期", priority:"优先级", folder:"文件夹", cancel:"取消", save:"保存", close:"关闭", calendarHint:"✨ 右键点击任意日期 → 快速添加任务", settingsTitle:"设置", deleteConfirm:"删除任务?", toastComplete:"任务完成！", toastUncomplete:"已恢复", toastDeleted:"已删除", emptyMsg:"✨ 暂无任务，点新建便签吧", confirmNewFolder:"新建文件夹", folderExists:"文件夹已存在", selectFolderFirst:"请选择文件夹" },
+        en: { dayTab:"Today", weekTab:"This Week", allTab:"All Tasks", addFolder:"+Add", folderPlaceholder:"New folder", viewCalendar:"Calendar (Right-click date)", newTask:"+ New Note", completeTask:"✓ Complete", deleteTask:"✗ Delete", settings:"⚙️ Settings", about:"ℹ️ About", recentTitle:"📋 Recent 2 Tasks", taskContent:"Content", taskDate:"Date", priority:"Priority", folder:"Folder", cancel:"Cancel", save:"Save", close:"Close", calendarHint:"✨ Right-click any date → Quick add", settingsTitle:"Settings", deleteConfirm:"Delete task?", toastComplete:"Task completed!", toastUncomplete:"Restored", toastDeleted:"Deleted", emptyMsg:"✨ No tasks, create one", confirmNewFolder:"New folder name", folderExists:"Folder exists", selectFolderFirst:"Select a folder first" }
+    };
+    let currentLang = localStorage.getItem('quicknotes_lang') || 'zh';
+    function t(key) { return locales[currentLang][key] || key; }
+    function updateUItexts() { document.querySelectorAll('[data-i18n]').forEach(el => { let key = el.getAttribute('data-i18n'); if(key) el.innerText = t(key); }); document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { let key = el.getAttribute('data-i18n-placeholder'); if(key) el.placeholder = t(key); }); renderTasks(); renderRecentTasks(); refreshFolderSelect(); }
+    
+    // 数据模型: tasks 增加 folder 字段, 默认文件夹 "默认"
+    let tasks = [];
+    let folders = ["默认"];
+    let currentFilter = "day";
+    let currentFolder = "默认";
+    let currentDate = new Date();
+    let editingTaskId = null;
+    let currentCalendarYear = new Date().getFullYear(), currentCalendarMonth = new Date().getMonth();
+    const priorityOrder = { "high": 1, "medium": 2, "low": 3 };
 
-    // DOM 元素
-    const transactionsContainer = document.getElementById('transactionsList');
-    const totalBalanceSpan = document.getElementById('totalBalance');
-    const totalIncomeSpan = document.getElementById('totalIncome');
-    const totalExpenseSpan = document.getElementById('totalExpense');
-    const amountInput = document.getElementById('amountInput');
-    const mainTypeSelect = document.getElementById('mainTypeSelect');
-    const expenseSubGroup = document.getElementById('expenseSubGroup');
-    const incomeSubGroup = document.getElementById('incomeSubGroup');
-    const expenseSubSelect = document.getElementById('expenseSubSelect');
-    const incomeSubSelect = document.getElementById('incomeSubSelect');
-    const descInput = document.getElementById('descInput');
-    const dateInput = document.getElementById('dateInput');
-    const addBtn = document.getElementById('addBtn');
-    const resetSampleBtn = document.getElementById('resetSampleBtn');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    const aboutBtn = document.getElementById('aboutBtn');
-    const modal = document.getElementById('aboutModal');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const yearSelect = document.getElementById('yearSelect');
-    const monthSelect = document.getElementById('monthSelect');
-    const queryBtn = document.getElementById('queryBtn');
-    const filterResultDiv = document.getElementById('filterResult');
-
-    function getTodayDate() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+    function saveData() { localStorage.setItem('quicknotes_tasks_v4', JSON.stringify(tasks)); localStorage.setItem('quicknotes_folders_v4', JSON.stringify(folders)); localStorage.setItem('quicknotes_currentFolder', currentFolder); }
+    function loadData() {
+        let storedTasks = localStorage.getItem('quicknotes_tasks_v4');
+        if(storedTasks) tasks = JSON.parse(storedTasks);
+        else { let today=new Date().toISOString().slice(0,10), tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10); tasks = [{ id:Date.now()+1, text:"完成项目报告", date:today, completed:false, priority:"high", folder:"默认" },{ id:Date.now()+2, text:"购买生日礼物", date:tomorrow, completed:false, priority:"medium", folder:"默认" }]; }
+        let storedFolders = localStorage.getItem('quicknotes_folders_v4');
+        if(storedFolders) folders = JSON.parse(storedFolders);
+        else folders = ["默认"];
+        let savedFolder = localStorage.getItem('quicknotes_currentFolder');
+        currentFolder = (savedFolder && folders.includes(savedFolder)) ? savedFolder : "默认";
+        if(!folders.includes("默认")) folders.unshift("默认");
     }
-    dateInput.value = getTodayDate();
-
-    function toggleSubCategory() {
-        if (mainTypeSelect.value === 'expense') {
-            expenseSubGroup.classList.add('show');
-            incomeSubGroup.classList.remove('show');
-        } else {
-            expenseSubGroup.classList.remove('show');
-            incomeSubGroup.classList.add('show');
+    const formatDateYMD = (d) => { let date=new Date(d); return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; };
+    const todayYMD = () => formatDateYMD(new Date());
+    const getWeekRange = (base) => { let d=new Date(base); let day=d.getDay(); let diff=day===0?-6:1-day; let mon=new Date(d); mon.setDate(d.getDate()+diff); let sun=new Date(mon); sun.setDate(mon.getDate()+6); return { start:formatDateYMD(mon), end:formatDateYMD(sun) }; };
+    
+    function filterAndSortTasks() {
+        let result = tasks.filter(t => t.folder === currentFolder);
+        if (currentFilter === "day") result = result.filter(t => t.date === formatDateYMD(currentDate));
+        else if (currentFilter === "week") { let range = getWeekRange(currentDate); result = result.filter(t => t.date >= range.start && t.date <= range.end); }
+        result.sort((a,b) => { if(a.completed !== b.completed) return a.completed?1:-1; let pa=priorityOrder[a.priority||'medium'], pb=priorityOrder[b.priority||'medium']; if(pa!==pb) return pa-pb; return a.date.localeCompare(b.date); });
+        return result;
+    }
+    function renderTasks() {
+        const container = document.getElementById('taskList');
+        const filtered = filterAndSortTasks();
+        if(filtered.length===0) { container.innerHTML = `<div class="empty-msg">✨ ${t('emptyMsg')}</div>`; return; }
+        container.innerHTML = filtered.map(task => `<div class="task-card" data-id="${task.id}"><div class="priority-badge ${task.priority==='high'?'priority-high':(task.priority==='medium'?'priority-medium':'priority-low')}" data-action="changePriority" data-id="${task.id}">${task.priority==='high'?'🔴':(task.priority==='medium'?'🟡':'🟢')}</div><div class="task-status ${task.completed?'completed':''}" data-action="toggle" data-id="${task.id}">${task.completed?'✅':'○'}</div><div class="task-content ${task.completed?'completed':''}">${escapeHtml(task.text)}</div><div class="task-date">📅 ${task.date}</div><div class="task-actions"><button class="icon-btn" data-action="edit" data-id="${task.id}">✏️ 编辑</button><button class="icon-btn" data-action="delete" data-id="${task.id}">🗑️ 删除</button></div></div>`).join('');
+        attachEvents();
+        renderRecentTasks();
+    }
+    function attachEvents() {
+        document.querySelectorAll('[data-action="toggle"]').forEach(el=>el.addEventListener('click',(e)=>{e.stopPropagation(); toggleTask(parseInt(el.dataset.id));}));
+        document.querySelectorAll('[data-action="edit"]').forEach(btn=>btn.addEventListener('click',(e)=>{e.stopPropagation(); openEditModal(parseInt(btn.dataset.id));}));
+        document.querySelectorAll('[data-action="delete"]').forEach(btn=>btn.addEventListener('click',(e)=>{e.stopPropagation(); if(confirm(t('deleteConfirm'))) deleteTask(parseInt(btn.dataset.id));}));
+        document.querySelectorAll('[data-action="changePriority"]').forEach(el=>el.addEventListener('click',(e)=>{e.stopPropagation(); cyclePriority(parseInt(el.dataset.id));}));
+    }
+    function cyclePriority(id) { let tsk = tasks.find(t=>t.id===id); if(tsk){ let order=['low','medium','high']; let idx=order.indexOf(tsk.priority||'medium'); tsk.priority=order[(idx+1)%3]; saveData(); renderTasks(); showToast(`${tsk.priority==='high'?'🔴高':(tsk.priority==='medium'?'🟡中':'🟢低')}`); if(document.getElementById('calendarModal').style.display==='flex') renderCalendarView(currentCalendarYear,currentCalendarMonth); } }
+    function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m]||m)); }
+    function showToast(msg){ let t=document.createElement('div'); t.innerText=msg; t.style.cssText=`position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:var(--accent); color:white; padding:8px 20px; border-radius:60px; z-index:2000;`; document.body.appendChild(t); setTimeout(()=>t.remove(),1800); }
+    function toggleTask(id){ let t=tasks.find(t=>t.id===id); if(t){ t.completed=!t.completed; saveData(); renderTasks(); if(document.getElementById('calendarModal').style.display==='flex') renderCalendarView(currentCalendarYear,currentCalendarMonth); showToast(t.completed ? t('toastComplete') : t('toastUncomplete')); } }
+    function deleteTask(id){ tasks=tasks.filter(t=>t.id!==id); saveData(); renderTasks(); if(document.getElementById('calendarModal').style.display==='flex') renderCalendarView(currentCalendarYear,currentCalendarMonth); showToast(t('toastDeleted')); }
+    function addOrUpdateTask(text,date,priority,folder,id=null){ if(!text.trim()){ alert('内容不能为空'); return false; } if(id){ let idx=tasks.findIndex(t=>t.id===id); if(idx!==-1){ tasks[idx].text=text.trim(); tasks[idx].date=date; tasks[idx].priority=priority; tasks[idx].folder=folder; saveData(); renderTasks(); } } else { tasks.push({ id:Date.now(), text:text.trim(), date, completed:false, priority, folder }); saveData(); renderTasks(); if(date===todayYMD()) showToast('📢 新任务已添加'); } if(document.getElementById('calendarModal').style.display==='flex') renderCalendarView(currentCalendarYear,currentCalendarMonth); return true; }
+    function openEditModal(id){ let task=tasks.find(t=>t.id===id); if(task){ editingTaskId=id; document.getElementById('modalTitle').innerText='编辑任务'; document.getElementById('taskText').value=task.text; document.getElementById('taskDate').value=task.date; document.getElementById('taskPriority').value=task.priority||'medium'; refreshFolderSelectForModal(task.folder); document.getElementById('taskModal').style.display='flex'; } }
+    function openNewModal(defaultDate=null, defaultFolder=null){ editingTaskId=null; document.getElementById('modalTitle').innerText='新建便签'; document.getElementById('taskText').value=''; document.getElementById('taskDate').value=defaultDate||todayYMD(); document.getElementById('taskPriority').value='medium'; refreshFolderSelectForModal(defaultFolder || currentFolder); document.getElementById('taskModal').style.display='flex'; }
+    function refreshFolderSelectForModal(selected){ let sel=document.getElementById('taskFolder'); sel.innerHTML=''; folders.forEach(f=>{ let opt=document.createElement('option'); opt.value=f; opt.innerText=f; if(f===selected) opt.selected=true; sel.appendChild(opt); }); }
+    function refreshFolderSelect(){ let sel=document.getElementById('folderSelect'); sel.innerHTML=''; folders.forEach(f=>{ let opt=document.createElement('option'); opt.value=f; opt.innerText=f; if(f===currentFolder) opt.selected=true; sel.appendChild(opt); }); sel.onchange=(e)=>{ currentFolder=e.target.value; localStorage.setItem('quicknotes_currentFolder',currentFolder); renderTasks(); }; }
+    
+    // 最近两项任务 (未完成优先)
+    function renderRecentTasks() { let all = [...tasks]; all.sort((a,b)=>a.completed===b.completed? (a.date.localeCompare(b.date)) : (a.completed?1:-1)); let recent = all.slice(0,2); let container=document.getElementById('recentList'); if(recent.length===0) container.innerHTML='-'; else container.innerHTML=recent.map(t=>`<div class="recent-item"><span>${t.completed?'✅':'○'} ${escapeHtml(t.text.length>18?t.text.slice(0,18)+'..':t.text)}</span><span style="font-size:0.7rem">${t.date}</span></div>`).join(''); }
+    
+    // 日历 + 右键添加
+    function renderCalendarView(year,month){
+        const firstDay=new Date(year,month,1); let startWeekday=firstDay.getDay(); let offset=startWeekday===0?6:startWeekday-1;
+        const daysInMonth=new Date(year,month+1,0).getDate(); const container=document.getElementById('calendarDaysContainer'); if(!container) return;
+        container.innerHTML='';
+        for(let i=0;i<offset;i++){ let div=document.createElement('div'); div.className='cal-day'; div.style.opacity='0.3'; container.appendChild(div); }
+        for(let d=1;d<=daysInMonth;d++){ let dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; let hasTask=tasks.some(t=>t.date===dateStr); let isToday=dateStr===todayYMD();
+            let dayDiv=document.createElement('div'); dayDiv.className='cal-day'; if(isToday) dayDiv.classList.add('today'); if(hasTask) dayDiv.classList.add('has-tasks');
+            dayDiv.innerText=d;
+            dayDiv.addEventListener('click',()=>{ let dayTasks=tasks.filter(t=>t.date===dateStr); if(dayTasks.length===0){ if(confirm(`📝 ${dateStr} 无任务，立即添加？`)) openNewModal(dateStr); } else { let msg=`📋 ${dateStr} 已有任务 (点击确定添加新任务)\n`+dayTasks.map(t=>`${t.completed?'✓':'○'} ${t.text}`).join('\n'); if(confirm(msg)) openNewModal(dateStr); } });
+            dayDiv.addEventListener('contextmenu', (e)=>{ e.preventDefault(); openNewModal(dateStr); }); // 右键添加任务
+            container.appendChild(dayDiv);
         }
+        document.getElementById('monthYearLabel').innerHTML = `${year}年 ${month+1}月`;
     }
-    mainTypeSelect.addEventListener('change', toggleSubCategory);
-    toggleSubCategory();
-
-    function initYearMonthSelects() {
-        const currentYear = new Date().getFullYear();
-        let earliestYear = currentYear;
-        if (transactions.length) {
-            const years = transactions.map(t => parseInt(t.dateStr.substring(0,4)));
-            earliestYear = Math.min(...years, currentYear);
-        }
-        yearSelect.innerHTML = '';
-        for (let y = earliestYear; y <= currentYear; y++) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y + '年';
-            if (y === currentYear) opt.selected = true;
-            yearSelect.appendChild(opt);
-        }
-        monthSelect.innerHTML = '';
-        for (let m = 1; m <= 12; m++) {
-            const opt = document.createElement('option');
-            opt.value = m;
-            opt.textContent = m + '月';
-            if (m === new Date().getMonth() + 1) opt.selected = true;
-            monthSelect.appendChild(opt);
-        }
-    }
-
-    function queryMonthStats() {
-        const year = parseInt(yearSelect.value);
-        const month = parseInt(monthSelect.value);
-        let monthIncome = 0, monthExpense = 0;
-        transactions.forEach(t => {
-            if (!t.dateStr) return;
-            const [ty, tm] = t.dateStr.split('-');
-            if (parseInt(ty) === year && parseInt(tm) === month) {
-                if (t.type === 'income') monthIncome += t.amount;
-                else monthExpense += t.amount;
-            }
-        });
-        filterResultDiv.innerHTML = `<p>${year}年 ${month}月 收支</p><div><span class="income">收入: ¥${monthIncome.toFixed(2)}</span> <span class="expense">支出: ¥${monthExpense.toFixed(2)}</span></div>`;
-    }
-
-    function getExpenseCategoryAmounts() {
-        const amounts = { '住房': 0, '餐饮': 0, '购物': 0, '休闲娱乐': 0, '其他支出': 0 };
-        transactions.forEach(t => {
-            if (t.type === 'expense') {
-                const cat = t.subCategory && amounts.hasOwnProperty(t.subCategory) ? t.subCategory : '其他支出';
-                amounts[cat] += t.amount;
-            }
-        });
-        return amounts;
-    }
-
-    function updateExpenseChart() {
-        const amounts = getExpenseCategoryAmounts();
-        const labels = ['住房', '餐饮', '购物', '休闲娱乐', '其他支出'];
-        const data = labels.map(cat => amounts[cat]);
-        const ctx = document.getElementById('expenseChart').getContext('2d');
-        if (expenseChart) expenseChart.destroy();
-        expenseChart = new Chart(ctx, {
-            type: 'pie',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#8b5a2b', '#b38b5a', '#c9a87b', '#d9b892', '#e8cfb0'], borderColor: '#fef6e8', borderWidth: 1 }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 8, family: 'Noto Serif SC' }, boxWidth: 8 } }, tooltip: { callbacks: { label: (ctx) => { let label = ctx.label || ''; let val = ctx.raw; let total = ctx.dataset.data.reduce((a,b)=>a+b,0); let percent = total===0?0:((val/total)*100).toFixed(1); return `${label}: ¥${val.toFixed(2)} (${percent}%)`; } } } } }
-        });
-    }
-
-    function saveToLocalStorage() { localStorage.setItem('xiaoqi_ledger_final', JSON.stringify(transactions)); }
-
-    function loadFromLocalStorage() {
-        const stored = localStorage.getItem('xiaoqi_ledger_final');
-        if (stored) {
-            try {
-                transactions = JSON.parse(stored);
-                transactions = transactions.filter(t => t && typeof t === 'object').map(t => {
-                    if (!t.dateStr) t.dateStr = getTodayDate();
-                    if (!t.timestamp) t.timestamp = Date.now();
-                    if (t.type === 'expense' && !t.subCategory) t.subCategory = '其他支出';
-                    if (t.type === 'income' && !t.subCategory) t.subCategory = '工资';
-                    return t;
-                });
-                saveToLocalStorage();
-            } catch(e) { initSampleData(); }
-        } else { initSampleData(); }
-        initYearMonthSelects();
-        renderAll();
-        queryMonthStats();
-        updateExpenseChart();
-    }
-
-    function initSampleData() {
-        const today = getTodayDate();
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        const yyyy = yesterday.getFullYear(), mm = String(yesterday.getMonth()+1).padStart(2,'0'), dd = String(yesterday.getDate()).padStart(2,'0');
-        const yesterdayStr = `${yyyy}-${mm}-${dd}`;
-        transactions = [
-            { id: Date.now()+1, amount:28, type:'expense', mainCategory:'expense', subCategory:'购物', description:'买竹纸', dateStr:yesterdayStr, timestamp:Date.now()-86400000 },
-            { id: Date.now()+2, amount:680, type:'income', mainCategory:'income', subCategory:'工资', description:'画稿润笔', dateStr:yesterdayStr, timestamp:Date.now()-86000000 },
-            { id: Date.now()+3, amount:67.5, type:'expense', mainCategory:'expense', subCategory:'餐饮', description:'茶会', dateStr:today, timestamp:Date.now()-3600000 },
-            { id: Date.now()+4, amount:1200, type:'income', mainCategory:'income', subCategory:'经营', description:'书法课金', dateStr:today, timestamp:Date.now()-7200000 },
-            { id: Date.now()+5, amount:89, type:'expense', mainCategory:'expense', subCategory:'休闲娱乐', description:'刻印闲章', dateStr:today, timestamp:Date.now()-1800000 },
-            { id: Date.now()+6, amount:1500, type:'expense', mainCategory:'expense', subCategory:'住房', description:'房租', dateStr:today, timestamp:Date.now()-2000000 },
-            { id: Date.now()+7, amount:300, type:'income', mainCategory:'income', subCategory:'财产', description:'理财收益', dateStr:today, timestamp:Date.now()-2500000 }
-        ];
-        saveToLocalStorage();
-    }
-
-    function calculateTotals() {
-        let totalIncome=0, totalExpense=0;
-        transactions.forEach(t => { if(t.type==='income') totalIncome+=t.amount; else totalExpense+=t.amount; });
-        return { totalIncome, totalExpense, balance: totalIncome-totalExpense };
-    }
-
-    function updateSummary() {
-        const { totalIncome, totalExpense, balance } = calculateTotals();
-        totalBalanceSpan.innerHTML = `¥${balance.toFixed(2)}`;
-        totalIncomeSpan.innerHTML = `¥${totalIncome.toFixed(2)}`;
-        totalExpenseSpan.innerHTML = `¥${totalExpense.toFixed(2)}`;
-    }
-
-    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-
-    function renderTransactionsList() {
-        if(transactions.length===0){ transactionsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-feather-alt"></i><p>暂无账目</p></div>`; return; }
-        const sorted = [...transactions].sort((a,b)=> { if(a.dateStr!==b.dateStr) return b.dateStr.localeCompare(a.dateStr); return (b.timestamp||0)-(a.timestamp||0); });
-        const listHtml = sorted.map(trans => {
-            const isIncome = trans.type === 'income';
-            const sign = isIncome ? '+' : '-';
-            const amountCls = isIncome ? 'income-amount' : 'expense-amount';
-            const formattedAmount = `¥${trans.amount.toFixed(2)}`;
-            const categoryTag = trans.subCategory ? `<span style="font-size:0.6rem; background:#f0e2d0; padding:2px 6px; border-radius:16px; margin-left:4px;">${trans.subCategory}</span>` : '';
-            return `<div class="transaction-item" data-id="${trans.id}"><div class="trans-info"><div class="trans-desc">${escapeHtml(trans.description)||'无题'} ${categoryTag}</div><div class="trans-date"><i class="far fa-calendar-alt"></i> ${trans.dateStr}</div></div><div class="trans-amount"><span class="${amountCls}">${sign} ${formattedAmount}</span><button class="delete-btn" data-id="${trans.id}"><i class="fas fa-trash-alt"></i></button></div></div>`;
-        }).join('');
-        transactionsContainer.innerHTML = listHtml;
-    }
-
-    function renderAll() { updateSummary(); renderTransactionsList(); saveToLocalStorage(); initYearMonthSelects(); queryMonthStats(); updateExpenseChart(); }
-
-    function addTransaction() {
-        const amountRaw = amountInput.value.trim();
-        const mainType = mainTypeSelect.value;
-        let subCategory = mainType === 'expense' ? expenseSubSelect.value : incomeSubSelect.value;
-        const description = descInput.value.trim();
-        let dateStr = dateInput.value;
-        if(!description){ alert("请填写事由~"); return; }
-        if(!amountRaw){ alert("请输入银两数目"); return; }
-        const amount = parseFloat(amountRaw);
-        if(isNaN(amount) || amount<=0){ alert("金额须大于零"); return; }
-        if(!dateStr) dateStr = getTodayDate();
-        const newId = Date.now() + Math.floor(Math.random()*10000);
-        transactions.push({ id:newId, amount, type:mainType, mainCategory:mainType, subCategory:subCategory, description, dateStr, timestamp:Date.now() });
-        renderAll();
-        amountInput.value = ''; descInput.value = ''; dateInput.value = getTodayDate(); amountInput.focus();
-    }
-
-    function handleDeleteTransaction(clickedId){ if(confirm("确定删去此笔记录？")){ transactions = transactions.filter(t=>t.id!==clickedId); renderAll(); } }
-    function resetToSample(){ if(confirm("重置示例将会覆盖当前账目，继续否？")){ initSampleData(); renderAll(); } }
-    function clearAllTransactions(){ if(confirm("清空全部流水，不可逆。确定吗？")){ transactions = []; saveToLocalStorage(); renderAll(); } }
-    function openModal(){ modal.style.display = 'flex'; }
-    function closeModal(){ modal.style.display = 'none'; }
-
-    function bindEvents() {
-        transactionsContainer.addEventListener('click', (e) => { const delBtn = e.target.closest('.delete-btn'); if(delBtn && delBtn.dataset.id){ handleDeleteTransaction(Number(delBtn.dataset.id)); e.stopPropagation(); } });
-        addBtn.addEventListener('click', addTransaction);
-        [amountInput, descInput, dateInput].forEach(input => input.addEventListener('keypress', (e) => { if(e.key === 'Enter') addTransaction(); }));
-        resetSampleBtn.addEventListener('click', resetToSample);
-        clearAllBtn.addEventListener('click', clearAllTransactions);
-        aboutBtn.addEventListener('click', openModal);
-        closeModalBtn.addEventListener('click', closeModal);
-        window.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
-        queryBtn.addEventListener('click', queryMonthStats);
-        yearSelect.addEventListener('change', queryMonthStats);
-        monthSelect.addEventListener('change', queryMonthStats);
-    }
-
-    loadFromLocalStorage();
-    bindEvents();
+    function openCalendarModal(){ currentCalendarYear=currentDate.getFullYear(); currentCalendarMonth=currentDate.getMonth(); renderCalendarView(currentCalendarYear,currentCalendarMonth); document.getElementById('calendarModal').style.display='flex'; }
+    
+    // 主题/语言
+    function applyTheme(theme){ document.body.className=`theme-${theme}`; localStorage.setItem('quicknotes_theme',theme); }
+    function loadTheme(){ let saved=localStorage.getItem('quicknotes_theme'); if(saved && ['morandi_blue','morandi_green','morandi_pink','morandi_beige'].includes(saved)) applyTheme(saved); else applyTheme('morandi_blue'); }
+    function setLanguage(lang){ currentLang=lang; localStorage.setItem('quicknotes_lang',lang); updateUItexts(); }
+    
+    // 初始化 UI 事件
+    document.addEventListener('DOMContentLoaded',()=>{
+        loadData(); loadTheme(); refreshFolderSelect(); updateUItexts(); renderTasks(); 
+        setInterval(()=>{ let now=new Date(); document.getElementById('currentDateDisplay').innerHTML = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${['周日','周一','周二','周三','周四','周五','周六'][now.getDay()]}`; },1000);
+        document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{ currentFilter=btn.dataset.filter; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderTasks(); }));
+        document.getElementById('openCalendarBtn').addEventListener('click',openCalendarModal);
+        document.getElementById('closeCalendarBtn').addEventListener('click',()=>document.getElementById('calendarModal').style.display='none');
+        document.getElementById('prevMonthBtn').addEventListener('click',()=>{ let d=new Date(currentCalendarYear,currentCalendarMonth-1); currentCalendarYear=d.getFullYear(); currentCalendarMonth=d.getMonth(); renderCalendarView(currentCalendarYear,currentCalendarMonth); });
+        document.getElementById('nextMonthBtn').addEventListener('click',()=>{ let d=new Date(currentCalendarYear,currentCalendarMonth+1); currentCalendarYear=d.getFullYear(); currentCalendarMonth=d.getMonth(); renderCalendarView(currentCalendarYear,currentCalendarMonth); });
+        document.getElementById('newTaskBtn').addEventListener('click',()=>openNewModal());
+        document.getElementById('completeSelectedBtn').addEventListener('click',()=>{ let uc=filterAndSortTasks().filter(t=>!t.completed); if(uc.length) toggleTask(uc[0].id); else alert('🎉 无未完成任务'); });
+        document.getElementById('deleteSelectedBtn').addEventListener('click',()=>{ let cur=filterAndSortTasks(); if(cur.length) if(confirm(t('deleteConfirm'))) deleteTask(cur[0].id); });
+        document.getElementById('settingsBtn').addEventListener('click',()=>document.getElementById('settingsModal').style.display='flex');
+        document.getElementById('closeSettingsBtn').addEventListener('click',()=>document.getElementById('settingsModal').style.display='none');
+        document.querySelectorAll('.color-circle').forEach(c=>c.addEventListener('click',()=>{ applyTheme(c.dataset.theme); document.getElementById('settingsModal').style.display='none'; }));
+        document.querySelectorAll('.lang-btn').forEach(btn=>btn.addEventListener('click',()=>setLanguage(btn.dataset.lang)));
+        document.getElementById('aboutBtn').addEventListener('click',()=>alert(`QuickNotes 灵动版\n版本 1.4 (文件夹分类+右键日历)\n开发者：_______\n联系方式：_______\n© 莫兰迪日程`));
+        let modal=document.getElementById('taskModal');
+        document.getElementById('modalConfirmBtn').addEventListener('click',()=>{ let text=document.getElementById('taskText').value, date=document.getElementById('taskDate').value, priority=document.getElementById('taskPriority').value, folder=document.getElementById('taskFolder').value; if(!date){alert('请选日期');return;} addOrUpdateTask(text,date,priority,folder,editingTaskId); modal.style.display='none'; });
+        document.getElementById('modalCancelBtn').addEventListener('click',()=>modal.style.display='none');
+        window.addEventListener('click',(e)=>{ if(e.target===modal) modal.style.display='none'; if(e.target===document.getElementById('calendarModal')) document.getElementById('calendarModal').style.display='none'; if(e.target===document.getElementById('settingsModal')) document.getElementById('settingsModal').style.display='none'; });
+        document.getElementById('addFolderBtn').addEventListener('click',()=>{ let name=document.getElementById('newFolderName').value.trim(); if(!name) return; if(folders.includes(name)){ alert(t('folderExists')); return; } folders.push(name); saveData(); refreshFolderSelect(); document.getElementById('newFolderName').value=''; });
+        setFilter("day");
+    });
+    function setFilter(f){ currentFilter=f; document.querySelectorAll('.filter-btn').forEach(btn=>{ if(btn.dataset.filter===f) btn.classList.add('active'); else btn.classList.remove('active'); }); renderTasks(); }
 </script>
 </body>
 </html>
